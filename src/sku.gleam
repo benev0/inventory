@@ -1,39 +1,64 @@
-import gleam/bytes_builder
+import gleam/erlang/os
 import gleam/erlang/process
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
+import gleam/int
+import gleam/io
+import gleam/option
 import gleam/result
-import mist.{type Connection, type ResponseData}
+import mist.{type ResponseData}
+import sku/database
+import sku/router
+import sku/web.{Context}
+import wisp
+import wisp/wisp_mist
+
+const db_name = "todomvc.sqlite3"
 
 pub fn main() {
-  let not_found =
-    response.new(404)
-    |> response.set_body(
-      mist.Bytes(bytes_builder.from_string("404 page not found")),
-    )
+  let selector = process.new_selector()
+  let state = 0
 
-  // site
+  wisp.configure_logger()
+
+  let port = load_port()
+  let secret_key_base = load_application_secret()
+  let assert Ok(priv) = wisp.priv_directory("sku")
+  let assert Ok(_) = database.with_connection(db_name, database.migrate_schema)
+
+  let handle_request = fn(req) {
+    use db <- database.with_connection(db_name)
+    let ctx = Context(user_id: 0, db: db, static_path: priv <> "/static")
+    router.handle_request(req, ctx)
+  }
+
   let assert Ok(_) =
-    fn(req: Request(Connection)) -> Response(ResponseData) {
-      case request.path_segments(req) {
-        [] -> serve_page(req)
-        _ -> not_found
+    fn(req: Request(_)) -> Response(ResponseData) {
+      case req.path {
+        "/ws" ->
+          router.create_ws(req, fn(_conn) {
+            io.print("connecting\n")
+            #(state, option.Some(selector))
+          })
+        _ -> wisp_mist.handler(handle_request, secret_key_base)(req)
       }
     }
     |> mist.new
-    |> mist.port(4200)
+    |> mist.port(port)
     |> mist.start_http
+
   process.sleep_forever()
 }
 
-fn serve_page(request: Request(Connection)) -> Response(ResponseData) {
-  mist.read_body(request, 1024 * 1024 * 10)
-  |> result.map(fn(_req) {
-    response.new(200)
-    |> response.set_body(mist.Bytes(bytes_builder.from_string("Hello World!")))
-  })
-  |> result.lazy_unwrap(fn() {
-    response.new(400)
-    |> response.set_body(mist.Bytes(bytes_builder.new()))
-  })
+// to do: panic if no secret
+fn load_application_secret() -> String {
+  os.get_env("APPLICATION_SECRET")
+  |> result.unwrap("100")
+  // |> result.unwrap(wisp.random_string(64))
+}
+
+fn load_port() -> Int {
+  os.get_env("PORT")
+  |> result.then(int.parse)
+  |> result.unwrap(4200)
 }

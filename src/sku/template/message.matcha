@@ -1,0 +1,7 @@
+{> with data as String
+
+<div id="chat_room" hx-swap-oob="beforeend">
+    <li id="message">
+        <h1>{{data}}</h1>
+    </li>
+</div>

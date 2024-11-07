@@ -3,13 +3,15 @@ version = "1.0.0"
 description = "suffering III"
 
 [dependencies]
-gleam_stdlib = "~> 0.34 or ~> 1.0"
+gleam_stdlib = "~> 0.40"
+wisp = ">= 1.2.0"
+gleam_erlang = ">= 0.22.0 and < 1.0.0"
+gleam_crypto = "~> 1.4"
 mist = ">= 3.0.0 and < 4.0.0"
-gleam_erlang = ">= 0.27.0 and < 1.0.0"
+sqlight = "~> 0.8"
+gleam_otp = ">= 0.13.0 and < 1.0.0"
 gleam_http = ">= 3.7.0 and < 4.0.0"
-gleam_otp = ">= 0.12.1 and < 1.0.0"
-gleam_pgo = ">= 0.14.0 and < 1.0.0"
-
+gleam_json = ">= 1.0.0"
 
 [dev-dependencies]
-gleeunit = "~> 1.0"
+gleeunit = "~> 1.2"

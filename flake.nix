@@ -21,7 +21,7 @@
         pkgs.mkShell {
 
           buildInputs = [
-            pkgs.erlang
+            pkgs.erlang_27
             pkgs.gleam
             pkgs.rebar3
             pkgs.elixir
